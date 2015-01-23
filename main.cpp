@@ -1,9 +1,16 @@
 #include <stdio.h>
+#include <locale>
 #include <libusb-1.0/libusb.h>
 const bool debInfo = 1;         // вывод отладочной информации
 
-static void print_devs(libusb_device **devs)
+static void print_devs()
 {
+    libusb_device **devs;
+    size_t cnt = libusb_get_device_list(NULL, &devs);
+    printf("Number of devices in the system = %d:\n", (int)cnt);
+    if (cnt < 0) return;
+
+
     libusb_device *dev;
     int vid = 0x04b4;
     int pid = 0x1002;
@@ -33,20 +40,48 @@ static void print_devs(libusb_device **devs)
     }
     printf("=============================================\n");
     printf("All devices = %d, MT-48 = %d\n", cntDev, cntMT48);
+
+    libusb_free_device_list(devs, 1);
 }
+
+void print_help(void)
+{
+    printf("Valid commands are:\n");
+    printf("\t L - print list of devices\n");
+    printf("\t H - print help\n");
+    printf("\t Q, <ESC> - exit programm\n");
+}
+
+
 int main(void)
 {
-    libusb_device **devs;
-    ssize_t cnt;
     int r = libusb_init(NULL);
     if (r < 0)
         return r;
-    cnt = libusb_get_device_list(NULL, &devs);
-    printf("Number of devices in the system = %d:\n", cnt);
-    if (cnt < 0)
-        return (int) cnt;
-    print_devs(devs);
-    libusb_free_device_list(devs, 1);
-    libusb_exit(NULL);
+
+    print_help();
+
+    char cmd = 0;
+    while (1){
+        cmd = toupper( getchar() );
+        if (cmd < '0') continue;
+
+        switch (cmd)
+        {
+            case 'L':
+                print_devs();
+                break;
+            case 'H':
+                print_help();
+                break;
+            case 'Q': case 033:
+                libusb_exit(NULL);
+                return 0;
+            default:
+                printf("Invalid command %c (%d)\n", cmd, cmd);
+                break;
+        }
+    }
+
     return 0;
 }
