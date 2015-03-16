@@ -1,7 +1,15 @@
 #include <stdio.h>
 #include <locale>
 #include <libusb-1.0/libusb.h>
+
+// std library
+#include <vector>
+#include <algorithm>
+
+
 const bool debInfo = 1;         // вывод отладочной информации
+
+using namespace std;
 
 static void print_devs()
 {
@@ -11,13 +19,13 @@ static void print_devs()
     if (cnt < 0) return;
 
 
+    vector<int> listDeviceMT48;
     libusb_device *dev;
     int vid = 0x04b4;
     int pid = 0x1002;
 
     int i = 0;
     int cntDev = 0;
-    int cntMT48 = 0;
 
     while ((dev = devs[i++]) != NULL) {
         libusb_device_descriptor desc;
@@ -34,12 +42,26 @@ static void print_devs()
         }
 
         cntDev++;
-        if ( desc.idVendor == vid && desc.idProduct == pid)
-            cntMT48++;
+        if ( desc.idVendor == vid && desc.idProduct == pid){
+            listDeviceMT48.push_back(desc.bcdDevice);
+        }
 
     }
     printf("=============================================\n");
-    printf("All devices = %d, MT-48 = %d\n", cntDev, cntMT48);
+    printf("All devices = %d, MT-48 = %d\n", cntDev, listDeviceMT48.size());
+
+    if ( listDeviceMT48.size() > 0 ){
+        printf("\nNumbers MT48 in the system: \n");
+        sort(listDeviceMT48.begin(), listDeviceMT48.end());
+        vector<int>::const_iterator iter;
+        int cntMT48 = 1;
+        for(iter = listDeviceMT48.begin(); iter != listDeviceMT48.end(); iter++, cntMT48++){
+            printf("%i ", *iter);
+            if (cntMT48%6 == 0)
+                printf("\n");
+        }
+        printf("\n\n");
+    }
 
     libusb_free_device_list(devs, 1);
 }
@@ -51,7 +73,6 @@ void print_help(void)
     printf("\t H - print help\n");
     printf("\t Q, <ESC> - exit programm\n");
 }
-
 
 int main(void)
 {
